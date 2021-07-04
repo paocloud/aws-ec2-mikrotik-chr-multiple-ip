@@ -1,0 +1,33 @@
+#### SRC NAT With VPC Private IP ####
+;;; WAN-A1
+/ip firewall nat add chain=srcnat action=src-nat to-addresses=10.101.1.11 
+src-address-list=RFC1918 connection-mark=con_wan_a_1
+
+;;; WAN-A2
+/ip firewall nat add chain=srcnat action=src-nat to-addresses=10.101.1.12
+src-address-list=RFC1918 connection-mark=con_wan_a_2
+
+;;; WAN-A1 Default
+/ip firewall nat add chain=srcnat action=src-nat to-addresses=10.101.1.11 
+src-address-list=RFC1918
+
+
+#### Accept Private Network Communocation (RFC1918) ####
+/ip firewall mangle add chain=prerouting action=accept src-address-list=RFC1918 
+dst-address-list=RFC1918
+
+#### Mark Connection for WAN-A1 ####
+/ip firewall mangle add chain=prerouting action=mark-connection new-connection-mark=con_wan_a_1 
+passthrough=yes dst-address=10.101.1.11 in-interface=ether1
+
+#### Mark Connection for WAN-A2 ####
+/ip firewall mangle add chain=prerouting action=mark-connection new-connection-mark=con_wan_a_2
+passthrough=yes dst-address=10.101.1.168 in-interface=ether1
+
+#### Connection A1 to WAN-A1 ####
+/ip firewall mangle add chain=output action=mark-routing new-routing-mark=wan_a_1 passthrough=no 
+dst-address-type=!local dst-address-list=!RFC1918 connection-mark=con_wan_a_1
+
+#### Connection A2 to WAN-A2 ####
+/ip firewall mangle add chain=output action=mark-routing new-routing-mark=wan_a_2 passthrough=no 
+dst-address-type=!local dst-address-list=!RFC1918 connection-mark=con_wan_a_2
